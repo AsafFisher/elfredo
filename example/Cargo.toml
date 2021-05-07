@@ -1,0 +1,19 @@
+[package]
+name = "example"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+elfredo = { path = ".." }
+serde = "1.0.125"
+failure = "0.1.8"
+
+[[bin]]
+name = "example"
+path = "src/main.rs"
+
+[[bin]]
+name = "embeditor"
+path = "src/my_embeditor.rs"

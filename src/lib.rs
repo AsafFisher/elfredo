@@ -1,55 +1,30 @@
+//! # Elfredo - Dynamic Resource Section
+//! This module allows you to embed a resource into an elf section and change its content after
+//! the binary has already been compiled. This is useful to change in-code configurations without
+//! compiling the whole binary again. Simply apply `embeditor --raw new_data elf_file` to
+//!
+//! # Examples
+//! app.rs
+//! ```no_run
+//! /// app.rs
+//! use elfredo::get_embedded_data;
+//! print!(
+//!        "{}",
+//!        String::from_utf8(get_embedded_data::<Vec<u8>>().unwrap()).unwrap()
+//! );
+//! ```
+//!
+//! Roadmap
+//! - [x] Make a simple binary patching ability.
+//! - [X] Make binary patching possible for generic types.
 #![feature(const_size_of_val)]
-use std::slice;
-use std::convert::TryInto;
+#![feature(num_as_ne_bytes)]
+#[macro_use]
+extern crate failure;
 
 pub mod data_entry;
-extern {
-    static mut __data_start: u8;
-    static mut _edata: u8;
-}
+pub mod embeditor;
 
-pub fn get_data() -> &'static [u8]{
-    unsafe {
-        println!("{:p}", &_edata as *const u8);
-        let hello = &_edata;
-        let length = (hello as *const u8).offset_from(&__data_start as *const _).abs() as usize;
-        let slice = slice::from_raw_parts(&__data_start, length);
-        slice
-    }
-}
-pub fn get_entry() -> Result<(), ()>{
-    let data = get_data();
-    for ch in data[8..].iter(){
-        println!("{:#4x}", ch);
-    }
-
-    const magic_size: usize = std::mem::size_of_val(data_entry::EMBEDDED_MAGIC);
-    println!("dd{:?}", data.len());
-    if data.len() >= magic_size{
-        for i in 0..data.len(){
-            if data.len() >= i + magic_size{
-                let magic:[u8; 4] = data[i..i + magic_size].try_into().unwrap();
-                //println!("{:?}", magic);
-            }else{
-                break;
-            }
-        }
-
-        Ok(())
-    }else{
-        Err(())
-    }
-}
-// fn get_embedded_data() -> DataEntry{
-//
-// }
-
-#[cfg(test)]
-mod tests {
-    use crate::{get_entry};
-
-    #[test]
-    fn it_works() {
-        get_entry().unwrap();
-    }
+pub fn get_embedded_data<T: serde::Deserialize<'static>>() -> Result<T, data_entry::ElfReadoError> {
+    data_entry::EXTENDED_DATA.get_data()
 }
