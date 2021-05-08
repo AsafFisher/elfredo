@@ -1,13 +1,10 @@
-use elfredo::{
-    data_entry::DataEntryHeader,
-    binpatch::update_section,
-};
+use elfredo::{binpatch::update_section, data_entry::DataEntryHeader};
 
-use std::path::{PathBuf, Path};
-use std::{env, io};
+use std::env;
 use std::ffi::OsStr;
-use tempfile::NamedTempFile;
 use std::io::Write;
+use std::path::PathBuf;
+use tempfile::NamedTempFile;
 
 const TEST_STRING: &[u8] = b"\"Oh, how I wish I could shut up like a telescope! \
 I think I could, if only I knew how to begin.\
@@ -39,18 +36,17 @@ fn generate_tmp_file_clone(file_to_clone: &PathBuf) -> NamedTempFile {
     let file_to_clone_perms = std::fs::metadata(file_to_clone).unwrap().permissions();
     std::fs::set_permissions(tmp_file.path(), file_to_clone_perms).unwrap();
 
-    tmp_file.write_all(file_buff.as_slice()).expect("Could not write section");
+    tmp_file
+        .write_all(file_buff.as_slice())
+        .expect("Could not write section");
     tmp_file
 }
 
 #[test]
 fn test_patching() {
-
     // Our embedded sample data
-    let data = match DataEntryHeader::generate_entry(TEST_STRING.to_vec()) {
-        Ok(data) => data,
-        Err(()) => panic!("Could not generate entry")
-    };
+    let data =
+        DataEntryHeader::generate_entry(TEST_STRING.to_vec()).expect("Could not generate entry");
 
     // Gets our test elf template
     let elf_path = get_test_elf_path();
@@ -62,7 +58,8 @@ fn test_patching() {
     // Patch the elf section
     update_section(tmp_file.path(), &data, ".extended");
 
-    let output = std::process::Command::new(
-        tmp_file.path()).output().expect("failed to execute process");
+    let output = std::process::Command::new(tmp_file.path())
+        .output()
+        .expect("failed to execute process");
     assert_eq!(TEST_STRING, output.stdout);
 }
