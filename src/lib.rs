@@ -2,8 +2,9 @@
 pub mod binpatch;
 pub mod data_entry;
 
-pub fn get_data() -> Result<&'static [u8], ()> {
-    data_entry::extended_data.get_data()
+#[no_mangle]
+pub fn get_embedded_data() -> Result<&'static [u8], ()> {
+    data_entry::EXTENDED_DATA.get_data()
 }
 
 

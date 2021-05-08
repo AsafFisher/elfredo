@@ -1,11 +1,10 @@
 use crc::crc32;
 use bincode;
 use serde::{Deserialize, Serialize};
-use crc::crc32::checksum_ieee;
 
 pub const EMBEDDED_MAGIC: &[u8; 4] = b"\xDE\xAD\xBE\xEF";
 #[link_section = ".extended"]
-pub static extended_data: DataEntryHeader = DataEntryHeader {
+pub static EXTENDED_DATA: DataEntryHeader = DataEntryHeader {
     magic: [0, 0, 0, 0],
     checksum: 0,
     size: 0,
@@ -27,14 +26,13 @@ const CHECK_START_OFFSET: usize = std::mem::size_of::<DataEntryHeader>() - SIZE_
 impl DataEntryHeader {
     pub fn get_data(&self) -> Result<&'static [u8], ()> {
         unsafe {
-            if &self.magic == EMBEDDED_MAGIC {
-                if self.is_crc_valid() {
-                    return Ok(std::slice::from_raw_parts(
-                        (self as *const Self as *const u8).add(std::mem::size_of::<DataEntryHeader>()),
-                        self.size));
-                }
+            if &self.magic == EMBEDDED_MAGIC && self.is_crc_valid() {
+                Ok(std::slice::from_raw_parts(
+                    (self as *const Self as *const u8).add(std::mem::size_of::<DataEntryHeader>()),
+                    self.size))
+            } else {
+                Err(())
             }
-            Err(())
         }
     }
     unsafe fn is_crc_valid(&self) -> bool {
