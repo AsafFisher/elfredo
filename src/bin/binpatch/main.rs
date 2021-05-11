@@ -1,7 +1,7 @@
 use clap::{AppSettings, Clap};
 
 use elfredo::{
-    binpatch::{get_section, update_section},
+    binpatch::update_section,
     data_entry::DataEntryHeader,
 };
 use std::path::Path;
@@ -11,23 +11,16 @@ use std::path::Path;
 #[clap(setting = AppSettings::ColoredHelp)]
 struct Opts {
     /// Sets a custom config file. Could have been an Option<T> with no default too
-    #[clap(short, long, default_value = "default.conf")]
-    input: String,
+    elf_target: String,
     /// Some input. Because this isn't an Option<T> it's required to be used
-    #[allow(dead_code)]
-    config: String,
-    /// A level of verbosity, and can be used multiple times
-    #[clap(short, long, parse(from_occurrences))]
-    #[allow(dead_code)]
-    verbose: i32,
+    file_to_embed: String,
 }
 
-fn main() {
+fn main() -> Result<(), failure::Error> {
     let opts: Opts = Opts::parse();
+    let bytes = std::fs::read(&opts.file_to_embed)?;
     let data =
-        DataEntryHeader::generate_entry(b"Hello".to_vec()).expect("Could not generate entry");
-    update_section(&Path::new(&opts.input), &data, ".extended");
-
-    let buffer = get_section(&opts.input, ".extended");
-    println!("{:?}", buffer);
+        DataEntryHeader::generate_entry(bytes).expect("Could not generate entry");
+    update_section(&Path::new(&opts.elf_target), &data, ".extended");
+    Ok(())
 }

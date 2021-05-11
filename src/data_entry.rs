@@ -53,7 +53,7 @@ impl DataEntryHeader {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_data(&self) -> Result<&'static [u8], ElfReadoError> {
+    pub fn get_data<T>(&self) -> Result<&'static [T], ElfReadoError> {
         unsafe {
             if &self.magic != EMBEDDED_MAGIC {
                 return Err(ElfReadoError::MagicNotFound {
@@ -64,7 +64,7 @@ impl DataEntryHeader {
                 return Err(ElfReadoError::InvalidCRC {});
             }
             Ok(std::slice::from_raw_parts(
-                (self as *const Self as *const u8).add(std::mem::size_of::<DataEntryHeader>()),
+                (self as *const Self as *const u8).add(std::mem::size_of::<DataEntryHeader>()) as *const T,
                 self.size,
             ))
         }
@@ -100,8 +100,11 @@ impl DataEntryHeader {
             checksum: 0,
             size: data.len(),
         };
-
+        println!("{:?}", bincode::serialize(&entry).unwrap());
+        println!("{:?}", &entry);
         let mut entry_vec = bincode::serialize(&entry)?;
+        println!("{:?}", bincode::serialize(&data).unwrap());
+        println!("{:?}", &data);
         entry_vec.extend(&data);
 
         // Calculate and update checksum
