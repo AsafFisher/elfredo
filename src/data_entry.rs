@@ -31,11 +31,10 @@ pub static EXTENDED_DATA: DataEntryHeader = DataEntryHeader {
 pub struct DataEntryHeader {
     magic: [u8; 4],
     checksum: u32,
-    size: usize,
+    size: u64,
 }
 
-const SIZE_FIELD_SIZE: usize = std::mem::size_of::<usize>();
-const CHECK_START_OFFSET: usize = std::mem::size_of::<DataEntryHeader>() - SIZE_FIELD_SIZE;
+const CHECK_START_OFFSET: usize = std::mem::size_of::<DataEntryHeader>();
 
 impl DataEntryHeader {
     /// Gets data from the embedded `EXTENDED_DATA` section. This data can be dynamically
@@ -48,12 +47,12 @@ impl DataEntryHeader {
     /// # use elfredo::data_entry;
     /// # fn main() -> Result<(), data_entry::ElfReadoError>{
     ///      let str = String::from_utf8(
-    ///         data_entry::EXTENDED_DATA.get_data()?.to_vec()).expect( "Not utf8");
+    ///         data_entry::EXTENDED_DATA.get_data::<&'static [u8]>()?.to_vec()).expect( "Not utf8");
     ///      println!("{}", str);
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_data<T>(&self) -> Result<&'static [T], ElfReadoError> {
+    pub fn get_data<T: Deserialize<'static>>(&self) -> Result<T, ElfReadoError> {
         unsafe {
             if &self.magic != EMBEDDED_MAGIC {
                 return Err(ElfReadoError::MagicNotFound {
@@ -63,17 +62,18 @@ impl DataEntryHeader {
             if !self.is_crc_valid() {
                 return Err(ElfReadoError::InvalidCRC {});
             }
-            Ok(std::slice::from_raw_parts(
-                (self as *const Self as *const u8).add(std::mem::size_of::<DataEntryHeader>()) as *const T,
-                self.size,
+            Ok(bincode::deserialize(std::slice::from_raw_parts(
+                (self as *const Self as *const u8).add(std::mem::size_of::<DataEntryHeader>()),
+                self.size as usize,
             ))
+            .unwrap())
         }
     }
 
     unsafe fn is_crc_valid(&self) -> bool {
         crc32::checksum_ieee(std::slice::from_raw_parts(
             (self as *const Self as *const u8).add(CHECK_START_OFFSET),
-            SIZE_FIELD_SIZE + self.size,
+            self.size as usize,
         )) == self.checksum
     }
 
@@ -94,20 +94,17 @@ impl DataEntryHeader {
     ///       Ok(())
     /// # }
     /// ```
-    pub fn generate_entry(data: Vec<u8>) -> Result<Vec<u8>, Error> {
+    pub fn generate_entry<T: Serialize>(data: T) -> Result<Vec<u8>, Error> {
         let entry = DataEntryHeader {
             magic: *EMBEDDED_MAGIC,
             checksum: 0,
-            size: data.len(),
+            size: bincode::serialized_size(&data).unwrap(),
         };
-        println!("{:?}", bincode::serialize(&entry).unwrap());
-        println!("{:?}", &entry);
-        let mut entry_vec = bincode::serialize(&entry)?;
-        println!("{:?}", bincode::serialize(&data).unwrap());
-        println!("{:?}", &data);
-        entry_vec.extend(&data);
 
-        // Calculate and update checksum
+        // Construct the buffer
+        let mut entry_vec = bincode::serialize(&entry)?;
+        entry_vec.extend(bincode::serialize(&data)?);
+
         let checksum = crc32::checksum_ieee(&entry_vec[CHECK_START_OFFSET..]);
         // No need for check
         let dat_safe = unsafe { &mut *(entry_vec.as_ptr() as *mut DataEntryHeader) };

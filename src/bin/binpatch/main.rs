@@ -1,9 +1,6 @@
 use clap::{AppSettings, Clap};
 
-use elfredo::{
-    binpatch::update_section,
-    data_entry::DataEntryHeader,
-};
+use elfredo::{binpatch::update_section, data_entry::DataEntryHeader};
 use std::path::Path;
 
 #[derive(Clap)]
@@ -19,8 +16,7 @@ struct Opts {
 fn main() -> Result<(), failure::Error> {
     let opts: Opts = Opts::parse();
     let bytes = std::fs::read(&opts.file_to_embed)?;
-    let data =
-        DataEntryHeader::generate_entry(bytes).expect("Could not generate entry");
+    let data = DataEntryHeader::generate_entry(bytes).expect("Could not generate entry");
     update_section(&Path::new(&opts.elf_target), &data, ".extended");
     Ok(())
 }
