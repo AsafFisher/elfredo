@@ -1,6 +1,6 @@
 [package]
 name = "elfredo"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Asaf Fisher <asaffisher.dev@gmail.com>"]
 description = "Make ELF formatted apps configurable"
 readme = "README.md"
