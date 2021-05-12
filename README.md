@@ -5,11 +5,21 @@
     width="408px" border="0" alt="elfredo">
 <br>
 </p>
-`elfredo` is a library that allows you to patch executables after they where
+`elfredo` is a library that allows you to patch executables after they were
 compiled. It utilize an extra embedded section to store data/configurations
 that one might want to change without recompiling the binary.
 
-Steps to integrate:
+There are two main components to any project that uses elfredo:
+* Customizing your embeditor to mach your datatype (step 1)
+* Calling the `get_embedded_data` method to retrieve the embedded
+data (step 2)
+  
+After these two are implemented you end up with two binaries:
+* [app executable].elf - Your editable app
+* [embeditor executable].elf - The binary that you use to change the embedded data
+
+
+Steps to integrate (See `./example`):
 1.   Write your configurable data structure in the embeditor binary:
 ```rust
 // my_embeditor.rs
@@ -44,7 +54,7 @@ fn main() -> Result<(), failure::Error> {
 }
 
 ```
-3. embeditor the elf with the new data
+3. Embed new data to the elf
 ```shell
 john@ubuntu:/mnt/hgfs/elfredo/example$ cat person.json
 {
