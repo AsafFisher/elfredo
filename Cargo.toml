@@ -1,8 +1,16 @@
 [package]
 name = "elfredo"
 version = "0.1.0"
-authors = ["Asaf Fisher <asaffisher@icloud.com>"]
+authors = ["Asaf Fisher <asaffisher.dev@gmail.com>"]
+description = "Make ELF formatted apps configurable"
+readme = "README.md"
+homepage = "https://github.com/AsafFisher/elfredo"
+repository = "https://github.com/AsafFisher/elfredo"
+keywords = ["cli", "lib", "elf", "patch", "configurations"]
+categories = ["config"]
 edition = "2018"
+license = "MIT OR Apache-2.0"
+
 
 [profile.release]
 opt-level = 'z'
