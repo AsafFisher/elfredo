@@ -72,3 +72,9 @@ john@ubuntu:/mnt/hgfs/elfredo/example$ cargo run --bin embeditor ../target/debug
 john@ubuntu:/mnt/hgfs/elfredo/example$ ../target/debug/example
 Person { name: "Ronald", id: 5 }
 ```
+
+# Roadmap
+
+- [x] Dynamic elf patching on linux
+- [ ] Dynamic PE patching on windows (Using Resources WinAPI)
+- [ ] Dynamic MAC-o patching
