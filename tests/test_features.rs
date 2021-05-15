@@ -9,6 +9,7 @@ mod tests {
     use elfredo::{data_entry::DataEntryHeader, embeditor::update_section};
 
     use crate::TestObj;
+    use bytesize;
     use serde::Serialize;
     use std::env;
     use std::ffi::OsStr;
@@ -56,6 +57,16 @@ that Alice had begun to think that very few things indeed were really impossible
     #[test]
     fn test_patch_u8_vec() {
         test_patching_generic(&TEST_STRING.to_vec(), &|expected, result| {
+            assert_eq!(expected, result);
+        });
+    }
+
+    #[test]
+    fn test_patch_stress_u8_vec() {
+        // ~110 KIB was the max objcopy could handle...
+        // TODO: check why
+        let huge_blob = b"A".repeat(bytesize::KIB as usize * 110);
+        test_patching_generic(&huge_blob.to_vec(), &|expected, result| {
             assert_eq!(expected, result);
         });
     }

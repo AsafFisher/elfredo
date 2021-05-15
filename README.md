@@ -9,6 +9,8 @@
 compiled. It utilize an extra embedded section to store data/configurations
 that one might want to change without recompiling the binary.
 
+Unfortunately I was able to make objcopy work only up to 113,650 bytes :disappointed:
+
 There are two main components to any project that uses elfredo:
 * Customizing your embeditor to mach your datatype (step 1)
 * Calling the `get_embedded_data` method to retrieve the embedded
