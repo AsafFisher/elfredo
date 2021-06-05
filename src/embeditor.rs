@@ -48,11 +48,11 @@ pub fn update_section(elf_file: &Path, section_data: &[u8], section_name: &str) 
 #[clap(version = "1.0", author = "Asaf F. <asaffisher.dev@gmail.com>")]
 #[clap(setting = AppSettings::ColoredHelp)]
 struct Opts {
-    /// Sets a custom config file. Could have been an Option<T> with no default too
+    /// The elf that you want to embed data into.
     elf_target: String,
-    /// Some input. Because this isn't an Option<T> it's required to be used
+    /// The data formatted in json you want to embed into your binary.
     json_file: String,
-
+    // If set, will dump the embedded data into STDIO
     #[clap(short, long)]
     dump: bool,
 }
