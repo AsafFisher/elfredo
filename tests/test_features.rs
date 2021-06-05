@@ -59,7 +59,7 @@ that Alice had begun to think that very few things indeed were really impossible
 
     #[test]
     fn test_patch_u8_vec() {
-        test_patching_generic(&TEST_STRING.to_vec(), &|expected, result| {
+        test_patching_generic(&TEST_STRING.to_vec(), |expected, result| {
             assert_eq!(expected, result);
         });
     }
@@ -69,7 +69,7 @@ that Alice had begun to think that very few things indeed were really impossible
         // ~110 KIB was the max objcopy could handle...
         // TODO: check why
         let huge_blob = b"A".repeat(bytesize::KIB as usize * 110);
-        test_patching_generic(&huge_blob.to_vec(), &|expected, result| {
+        test_patching_generic(&huge_blob.to_vec(), |expected, result| {
             assert_eq!(expected, result);
         });
     }
@@ -81,7 +81,7 @@ that Alice had begun to think that very few things indeed were really impossible
 
     #[test]
     fn test_patch_object() {
-        test_patching_generic(&TEST_OBJ, &|expected, result| {
+        test_patching_generic(&TEST_OBJ, |expected, result| {
             assert_eq!(
                 format!("{:?}", expected),
                 String::from_utf8(result.to_vec()).unwrap()
@@ -113,7 +113,7 @@ that Alice had begun to think that very few things indeed were really impossible
     }
     fn test_patching_generic<T: Debug + Serialize>(
         test_data: &T,
-        pass_condition: &dyn Fn(&T, &Vec<u8>),
+        pass_condition: fn(&T, &Vec<u8>),
     ) {
         // Prepare the test environment
         let (tmp_elf_file, data) = prepare_test_requirements(test_data);
