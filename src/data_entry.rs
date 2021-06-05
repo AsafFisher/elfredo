@@ -52,7 +52,7 @@ impl DataEntryHeader {
     /// #     Ok(())
     /// # }
     /// ```
-    pub fn get_data<T: Deserialize<'static>>(&self) -> Result<T, ElfReadoError> {
+    pub fn get_data<'d, T: Deserialize<'d>>(&self) -> Result<T, ElfReadoError> {
         unsafe {
             if &self.magic != EMBEDDED_MAGIC {
                 return Err(ElfReadoError::MagicNotFound {
@@ -68,6 +68,11 @@ impl DataEntryHeader {
             ))
             .unwrap())
         }
+    }
+
+    pub fn ptr_to_data<'d, T: Deserialize<'d>>(ptr: &[u8]) -> Result<T, ElfReadoError> {
+        let ptr = ptr.as_ptr() as *const DataEntryHeader;
+        unsafe { &*ptr }.get_data::<T>()
     }
 
     unsafe fn is_crc_valid(&self) -> bool {

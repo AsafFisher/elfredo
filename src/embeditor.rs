@@ -52,12 +52,26 @@ struct Opts {
     elf_target: String,
     /// Some input. Because this isn't an Option<T> it's required to be used
     json_file: String,
+
+    #[clap(short, long)]
+    dump: bool,
 }
 
 pub fn run_embeditor<T: Serialize + DeserializeOwned>() -> Result<(), failure::Error> {
     let opts: Opts = Opts::parse();
-    let person: T = serde_json::from_reader(std::fs::File::open(opts.json_file)?).expect("Founnd");
-    let data = DataEntryHeader::generate_entry(person).expect("Could not generate entry");
-    update_section(&Path::new(&opts.elf_target), &data, ".extended");
+    if opts.dump {
+        let dump = get_section(&opts.elf_target, ".extended");
+        println!(
+            "{}",
+            serde_json::to_string_pretty::<T>(&DataEntryHeader::ptr_to_data(dump.as_slice())?)?
+        );
+    } else {
+        let person: T =
+            serde_json::from_reader(std::fs::File::open(opts.json_file)?).expect("Founnd");
+        let data = DataEntryHeader::generate_entry(person).expect("Could not generate entry");
+
+        update_section(&Path::new(&opts.elf_target), &data, ".extended");
+    }
+
     Ok(())
 }
