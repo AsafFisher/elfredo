@@ -57,14 +57,18 @@ struct Opts {
     dump: bool,
 }
 
+fn dump_embedded_data_as_json<T: Serialize + DeserializeOwned>(
+    elf_target: &str,
+) -> Result<String, failure::Error> {
+    Ok(serde_json::to_string_pretty::<T>(
+        &DataEntryHeader::ptr_to_data(get_section(elf_target, ".extended").as_slice())?,
+    )?)
+}
+
 pub fn run_embeditor<T: Serialize + DeserializeOwned>() -> Result<(), failure::Error> {
     let opts: Opts = Opts::parse();
     if opts.dump {
-        let dump = get_section(&opts.elf_target, ".extended");
-        println!(
-            "{}",
-            serde_json::to_string_pretty::<T>(&DataEntryHeader::ptr_to_data(dump.as_slice())?)?
-        );
+        println!("{}", dump_embedded_data_as_json::<T>(&opts.elf_target)?);
     } else {
         let person: T =
             serde_json::from_reader(std::fs::File::open(opts.json_file)?).expect("Founnd");
