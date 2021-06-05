@@ -6,11 +6,14 @@ pub struct TestObj {
 
 #[cfg(test)]
 mod tests {
-    use elfredo::{data_entry::DataEntryHeader, embeditor::update_section};
+    use elfredo::{
+        data_entry::DataEntryHeader,
+        embeditor::{get_section, update_section},
+    };
 
     use crate::TestObj;
     use bytesize;
-    use serde::Serialize;
+    use serde::{Deserialize, Serialize};
     use std::env;
     use std::ffi::OsStr;
     use std::fmt::Debug;
@@ -86,10 +89,17 @@ that Alice had begun to think that very few things indeed were really impossible
         });
     }
 
-    fn test_patching_generic<T: Debug + Serialize>(
-        test_data: &T,
-        pass_condition: &dyn Fn(&T, &Vec<u8>),
-    ) {
+    #[test]
+    fn test_dump_json() {
+        test_dump_generic(&TEST_OBJ, &|json_result| {
+            assert_eq!(
+                json_result,
+                serde_json::to_string_pretty(&TEST_OBJ).unwrap()
+            )
+        })
+    }
+
+    fn prepare_test_requirements<T: Debug + Serialize>(test_data: &T) -> (NamedTempFile, Vec<u8>) {
         // Our embedded sample data
         let data = DataEntryHeader::generate_entry(test_data).expect("Could not generate entry");
 
@@ -99,14 +109,39 @@ that Alice had begun to think that very few things indeed were really impossible
 
         // Generate a tmp file from our elf template.
         let tmp_file = generate_tmp_file_clone(&elf_path);
+        (tmp_file, data)
+    }
+    fn test_patching_generic<T: Debug + Serialize>(
+        test_data: &T,
+        pass_condition: &dyn Fn(&T, &Vec<u8>),
+    ) {
+        // Prepare the test environment
+        let (tmp_elf_file, data) = prepare_test_requirements(test_data);
 
         // Patch the elf section
-        update_section(tmp_file.path(), &data, ".extended");
+        update_section(tmp_elf_file.path(), &data, ".extended");
 
-        let output = std::process::Command::new(tmp_file.path())
+        let output = std::process::Command::new(tmp_elf_file.path())
             .arg(std::any::type_name::<T>().split("::").last().unwrap())
             .output()
             .expect("failed to execute process");
         pass_condition(test_data, &output.stdout)
+    }
+    fn test_dump_generic<'de, T: Debug + Serialize + Deserialize<'de>>(
+        test_data: &T,
+        pass_condition: &dyn Fn(&str),
+    ) {
+        // Prepare the test environment
+        let (tmp_elf_file, data) = prepare_test_requirements(test_data);
+        // Patch the elf section
+        update_section(tmp_elf_file.path(), &data, ".extended");
+        let dump = get_section(tmp_elf_file.path().to_str().unwrap(), ".extended");
+        pass_condition(
+            serde_json::to_string_pretty::<T>(
+                &DataEntryHeader::ptr_to_data(dump.as_slice()).unwrap(),
+            )
+            .unwrap()
+            .as_str(),
+        )
     }
 }
