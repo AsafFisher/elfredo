@@ -1,6 +1,7 @@
+use serde;
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
-pub struct TestObj {
-    name: &'static str,
+pub struct TestObj{
+    name: String,
     age: u8,
 }
 
@@ -8,12 +9,12 @@ pub struct TestObj {
 mod tests {
     use elfredo::{
         data_entry::DataEntryHeader,
-        embeditor::{get_section, update_section},
+        embeditor::{dump_embedded_data_as_json, update_section},
     };
 
     use crate::TestObj;
     use bytesize;
-    use serde::{Deserialize, Serialize};
+    use serde::Serialize;
     use std::env;
     use std::ffi::OsStr;
     use std::fmt::Debug;
@@ -74,14 +75,14 @@ that Alice had begun to think that very few things indeed were really impossible
         });
     }
 
-    pub const TEST_OBJ: TestObj = TestObj {
-        name: "Moshe",
-        age: 3,
-    };
 
     #[test]
     fn test_patch_object() {
-        test_patching_generic(&TEST_OBJ, |expected, result| {
+        let test_obj: TestObj = TestObj {
+            name: String::from("moshe"),
+            age: 3,
+        };
+        test_patching_generic(&test_obj, |expected, result| {
             assert_eq!(
                 format!("{:?}", expected),
                 String::from_utf8(result.to_vec()).unwrap()
@@ -91,10 +92,15 @@ that Alice had begun to think that very few things indeed were really impossible
 
     #[test]
     fn test_dump_json() {
-        test_dump_generic(&TEST_OBJ, &|json_result| {
+        let test_obj: TestObj = TestObj {
+            name: String::from("moshe"),
+            age: 3,
+        };
+        let control_json = serde_json::to_string_pretty(&test_obj).unwrap();
+        test_dump_generic(test_obj, &|json_result| {
             assert_eq!(
                 json_result,
-                serde_json::to_string_pretty(&TEST_OBJ).unwrap()
+                control_json
             )
         })
     }
@@ -127,21 +133,17 @@ that Alice had begun to think that very few things indeed were really impossible
             .expect("failed to execute process");
         pass_condition(test_data, &output.stdout)
     }
-    fn test_dump_generic<'de, T: Debug + Serialize + Deserialize<'de>>(
-        test_data: &T,
+    fn test_dump_generic(
+        test_data: TestObj,
         pass_condition: &dyn Fn(&str),
     ) {
         // Prepare the test environment
-        let (tmp_elf_file, data) = prepare_test_requirements(test_data);
+        let (tmp_elf_file, data) = prepare_test_requirements(&test_data);
         // Patch the elf section
         update_section(tmp_elf_file.path(), &data, ".extended");
-        let dump = get_section(tmp_elf_file.path().to_str().unwrap(), ".extended");
+        let json_dump = dump_embedded_data_as_json::<TestObj>(tmp_elf_file.path().to_str().unwrap()).unwrap();
         pass_condition(
-            serde_json::to_string_pretty::<T>(
-                &DataEntryHeader::ptr_to_data(dump.as_slice()).unwrap(),
-            )
-            .unwrap()
-            .as_str(),
+            json_dump.as_str()
         )
     }
 }

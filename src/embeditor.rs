@@ -57,7 +57,7 @@ struct Opts {
     dump: bool,
 }
 
-fn dump_embedded_data_as_json<T: Serialize + DeserializeOwned>(
+pub fn dump_embedded_data_as_json<T: Serialize + DeserializeOwned>(
     elf_target: &str,
 ) -> Result<String, failure::Error> {
     Ok(serde_json::to_string_pretty::<T>(
